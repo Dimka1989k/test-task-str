@@ -317,7 +317,7 @@ export default function Chat() {
     if (!user || !userId) return;
 
     if (!socketio.current) {
-      socketio.current = socketIOClient("http://localhost:3002", {
+      socketio.current = socketIOClient("https://chat-strazen-media-1.onrender.com", {
         query: { userId: userId },
       });
 
