@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import socketIOClient from "socket.io-client";
-import { FaReact } from "react-icons/fa6";
 import { IoChevronBack } from "react-icons/io5";
+
+import _ from "lodash"; 
 
 import smallMonn from "../../assets/icon-moon-small.png";
 import iconExpert from "../../assets/icon-girl.png";
@@ -10,8 +11,6 @@ import buttonSend from '../../assets/icon-send.png';
 import iconStar from '../../assets/iconstar.png';
 
 import "./Chat.styles.css";
-
-import _ from "lodash";
 
 const experts = [
   { id: "expert-starzen", name: "Name Surname", online: true },
@@ -35,7 +34,7 @@ const autoResponsePhrases = [
 ];
 
 const formatTimestamp = (timestamp) => {
-  if (!timestamp) return ""; 
+  if (!timestamp) return "";
   const date = new Date(timestamp);
   const now = new Date();
 
@@ -61,60 +60,21 @@ const formatTimestamp = (timestamp) => {
   }
 };
 
-const UserLogin = ({ setUser }) => {
-  const [userName, setUserName] = useState("");
-  const handleUser = () => {
-    if (!userName.trim()) return;
-    localStorage.setItem("user", userName);
-    localStorage.setItem(
-      "userId",
-      `user_${userName.toLowerCase().replace(/\s/g, "_")}_${_.random(1, 1000)}`
-    );
-    setUser(userName);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleUser();
-    }
-  };
-
-  return (
-    <div className="login_container">
-      <div className="login_title">
-        <FaReact className="login_icon" />
-        <h1>Chat App</h1>
-      </div>
-      <div className="login_form">
-        <input
-          type="text"
-          placeholder="Enter your name"
-          onChange={(e) => setUserName(e.target.value)}
-          onKeyDown={handleKeyPress}
-          value={userName}
-        />
-        <button onClick={handleUser}>Enter Chat</button>
-      </div>
-    </div>
-  );
-};
-
-
 const ChatListPanel = ({
   conversations,
   onSelectConversation,
   currentUserId,
-  showChatList 
+  showChatList
 }) => {
   return (
-    <div className={`chat_list_panel ${showChatList ? '' : 'hidden-on-mobile'}`}> 
+    <div className={`chat_list_panel ${showChatList ? '' : 'hidden-on-mobile'}`}>
       {conversations.length === 0 ? (
         <p className="no_conversations">
           No active conversations. Start one by selecting an expert!
         </p>
       ) : (
         conversations
-          .sort((a, b) => new Date(b.lastTimestamp || 0) - new Date(a.lastTimestamp || 0)) 
+          .sort((a, b) => new Date(b.lastTimestamp || 0) - new Date(a.lastTimestamp || 0))
           .map((conv) => (
             <div
               key={conv.id}
@@ -181,7 +141,7 @@ const ChatListPanel = ({
                     <p className="name-expert"> {expert.name}</p>
                     <p>Today, 9:34</p>
                   </div>
-                  <div className="text-notification">                  
+                  <div className="text-notification">
                     <p className="text-expert">
                       It is a long established fact that a <br />
                       reader will be distracted by the readable content of a
@@ -214,7 +174,7 @@ const ChatWindow = ({
   addMessage,
   onBackToList,
   currentUserId,
-  showChatList 
+  showChatList
 }) => {
   const endOfMessages = useRef();
   const [messageText, setMessageText] = useState("");
@@ -238,11 +198,12 @@ const ChatWindow = ({
   }, [chats]);
 
   return (
-    <div className={`chat_window ${showChatList ? 'hidden-on-mobile' : ''}`}> 
+    <div className={`chat_window ${showChatList ? 'hidden-on-mobile' : ''}`}>
       <div className="chat_window_header">
         <IoChevronBack className="back_icon" onClick={onBackToList} />
         <div className="header_info">
-          <img src="" alt="" />
+          {/* Додав зображення експерта, щоб воно не було порожнім */}
+          <img src={iconExpert} alt="Expert" style={{width: 40, height: 40, borderRadius: '50%'}} />
           <h3 className="exper-name">{activeExpert.name}</h3>
           <div className="container-dot">
             <span
@@ -278,7 +239,6 @@ const ChatWindow = ({
             >
               <div className="message_content">
                 <p className="message_text">{chat.message}</p>
-             
               </div>
             </div>
           );
@@ -304,20 +264,20 @@ const ChatWindow = ({
   );
 };
 
-export default function Chat() {
-  const [user, setUser] = useState(localStorage.getItem("user"));
-  const [userId, setUserId] = useState(localStorage.getItem("userId"));
+export default function Chat({ user, userId }) {
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [activeExpert, setActiveExpert] = useState(null);
   const [activeChatMessages, setActiveChatMessages] = useState([]);
-  const [showChatList, setShowChatList] = useState(true); 
+  const [showChatList, setShowChatList] = useState(true);
 
   const socketio = useRef(null);
 
   useEffect(() => {
-    if (!user || !userId) return;
-
+    if (!user || !userId) {
+        console.warn("Chat component: User or userId props are missing. Socket.IO will not connect.");
+        return;
+    }
     if (!socketio.current) {
       socketio.current = socketIOClient("https://chat-strazen-media-1.onrender.com", {
         query: { userId: userId },
@@ -342,7 +302,7 @@ export default function Chat() {
         console.log(
           "New message received from server (e.g., from another user, not auto-response):",
           newMessage
-        );
+        );   
         if (newMessage.conversationId === activeConversationId) {
           setActiveChatMessages((prevMessages) => {
             const messageExists = prevMessages.some(
@@ -353,8 +313,7 @@ export default function Chat() {
             }
             return [...prevMessages, newMessage];
           });
-        }
-
+        }  
         setConversations((prevConvs) => {
           const updatedConvs = prevConvs.map((conv) => {
             if (conv.id === newMessage.conversationId) {
@@ -363,7 +322,7 @@ export default function Chat() {
                 lastMessage: newMessage.message,
                 lastTimestamp: newMessage.timestamp,
                 unreadCount:
-                  newMessage.senderId !== userId &&
+                  newMessage.senderId !== userId && 
                   conv.id !== activeConversationId
                     ? conv.unreadCount + 1
                     : conv.unreadCount,
@@ -371,7 +330,6 @@ export default function Chat() {
             }
             return conv;
           });
-
           const conversationExistsInList = updatedConvs.some(
             (conv) => conv.id === newMessage.conversationId
           );
@@ -392,7 +350,6 @@ export default function Chat() {
               ];
             }
           }
-
           return updatedConvs;
         });
       });
@@ -401,7 +358,6 @@ export default function Chat() {
         console.log("Disconnected from chat server");
       });
     }
-
     return () => {
       if (socketio.current) {
         socketio.current.off("connect");
@@ -413,7 +369,7 @@ export default function Chat() {
         socketio.current = null;
       }
     };
-  }, [user, userId, activeConversationId]);
+  }, [user, userId, activeConversationId]); 
 
   const handleSelectConversation = useCallback(
     async (convId, expertId) => {
@@ -425,8 +381,7 @@ export default function Chat() {
       const expert = experts.find((e) => e.id === expertId);
       setActiveExpert({ ...expert, conversationId: targetConversationId });
       setActiveConversationId(targetConversationId);
-      setShowChatList(false); 
-
+      setShowChatList(false);  
       setConversations((prevConvs) => {
         const exists = prevConvs.find((c) => c.id === targetConversationId);
         if (exists) {
@@ -434,7 +389,6 @@ export default function Chat() {
             conv.id === targetConversationId ? { ...conv, unreadCount: 0 } : conv
           );
         }
-
         return [
           ...prevConvs,
           {
@@ -447,15 +401,17 @@ export default function Chat() {
         ];
       });
 
+      // Завантажуємо повідомлення для вибраної розмови
       if (socketio.current) {
         socketio.current.emit("loadConversationMessages", targetConversationId);
       }
     },
-    [userId]
+    [userId] 
   );
 
+
   const addMessage = useCallback((message, convId, receiverId) => {
-    const currentUserId = localStorage.getItem("userId");
+    const currentUserId = userId; 
 
     const userMessage = {
       conversationId: convId,
@@ -463,7 +419,7 @@ export default function Chat() {
       receiverId: receiverId,
       message: message,
       timestamp: new Date().toISOString(),
-      _id: `temp_${Date.now()}_${Math.random()}`,
+      _id: `temp_${Date.now()}_${Math.random()}`, 
     };
 
     setConversations((prevConvs) => {
@@ -489,7 +445,6 @@ export default function Chat() {
       return [...prevMessages, userMessage];
     });
 
-
     if (socketio.current) {
       socketio.current.emit("newMessage", userMessage);
     }
@@ -500,11 +455,11 @@ export default function Chat() {
     setTimeout(() => {
       const botMessage = {
         conversationId: convId,
-        senderId: receiverId,
-        receiverId: currentUserId,
+        senderId: receiverId, 
+        receiverId: currentUserId, 
         message: autoResponseMessageText,
         timestamp: new Date().toISOString(),
-        _id: `temp_bot_${Date.now()}_${Math.random()}`,
+        _id: `temp_bot_${Date.now()}_${Math.random()}`, 
       };
 
       setActiveChatMessages((prevMessages) => [...prevMessages, botMessage]);
@@ -522,11 +477,12 @@ export default function Chat() {
         });
       });
 
+
       if (socketio.current) {
         socketio.current.emit("saveBotMessage", botMessage);
       }
-    }, 1500);
-  }, [userId]);
+    }, 1500); 
+  }, [userId]); 
 
   const handleBackToList = () => {
     setActiveConversationId(null);
@@ -534,53 +490,45 @@ export default function Chat() {
     setActiveChatMessages([]);
     setShowChatList(true); 
     if (socketio.current) {
-      socketio.current.emit("loadConversations");
+      socketio.current.emit("loadConversations"); 
     }
   };
 
-  const Logout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("userId");
-    setUser("");
-    setUserId("");
+  const Logout = () => {   
     setActiveConversationId(null);
     setActiveExpert(null);
     setActiveChatMessages([]);
     setShowChatList(true); 
     if (socketio.current) {
-      socketio.current.disconnect();
+      socketio.current.disconnect(); 
       socketio.current = null;
     }
   };
 
   return (
-    <div className="chat-app-container">
-      {!user || !userId ? (
-        <UserLogin setUser={setUser} />
-      ) : (
-        <div className="chat-layout">         
-          <ChatListPanel
-            conversations={conversations}
-            onSelectConversation={handleSelectConversation}
-            currentUserId={userId}
-            showChatList={showChatList} 
+    <div className="chat-app-container">    
+      <div className="chat-layout">
+        <ChatListPanel
+          conversations={conversations}
+          onSelectConversation={handleSelectConversation}
+          currentUserId={userId} 
+          showChatList={showChatList}
+        />
+        {activeExpert ? (
+          <ChatWindow
+            chats={activeChatMessages}
+            activeExpert={activeExpert}
+            addMessage={addMessage}
+            onBackToList={handleBackToList}
+            currentUserId={userId} 
+            showChatList={showChatList}
           />
-          {activeExpert ? (
-            <ChatWindow
-              chats={activeChatMessages}
-              activeExpert={activeExpert}
-              addMessage={addMessage}
-              onBackToList={handleBackToList}
-              currentUserId={userId}
-              showChatList={showChatList} 
-            />
-          ) : ( 
-            <div className={`chat_window_placeholder ${showChatList ? 'hidden-on-mobile' : ''}`}> 
-              <p>Select a chat or start a new one to begin.</p>
-            </div>
-          )}
-        </div>
-      )}
+        ) : (
+          <div className={`chat_window_placeholder ${showChatList ? 'hidden-on-mobile' : ''}`}>
+            <p>Select a chat or start a new one to begin.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
