@@ -61,6 +61,44 @@ const formatTimestamp = (timestamp) => {
   }
 };
 
+const UserLogin = ({ setUser }) => {
+  const [userName, setUserName] = useState("");
+  const handleUser = () => {
+    if (!userName.trim()) return;
+    localStorage.setItem("user", userName);
+    localStorage.setItem(
+      "userId",
+      `user_${userName.toLowerCase().replace(/\s/g, "_")}_${_.random(1, 1000)}`
+    );
+    setUser(userName);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleUser();
+    }
+  };
+
+  return (
+    <div className="login_container">
+      <div className="login_title">
+        <FaReact className="login_icon" />
+        <h1>Chat App</h1>
+      </div>
+      <div className="login_form">
+        <input
+          type="text"
+          placeholder="Enter your name"
+          onChange={(e) => setUserName(e.target.value)}
+          onKeyDown={handleKeyPress}
+          value={userName}
+        />
+        <button onClick={handleUser}>Enter Chat</button>
+      </div>
+    </div>
+  );
+};
+
 
 const ChatListPanel = ({
   conversations,
