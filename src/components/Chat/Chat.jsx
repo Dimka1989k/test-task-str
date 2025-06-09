@@ -11,6 +11,8 @@ import iconStar from '../../assets/iconstar.png';
 
 import "./Chat.styles.css";
 
+import _ from "lodash";
+
 const experts = [
   { id: "expert-starzen", name: "Name Surname", online: true },
   { id: "expert-name1", name: "Name Surname", online: false },
